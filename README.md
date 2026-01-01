@@ -485,7 +485,7 @@ customer-segmentation/
 ├── 02_feature_distributions.png
 ├── 03_correlation_heatmap.png
 ├── ... (all 20 PNG files here)
-└──  presntaion.pdf
+└──  presentation .pdf
 ```
 
 ---
