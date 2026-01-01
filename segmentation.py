@@ -1,14 +1,4 @@
-"""
-ENHANCED CUSTOMER SEGMENTATION FRAMEWORK
-========================================
-A comprehensive, production-ready customer segmentation system with:
-1. Advanced data preprocessing and cleaning
-2. Feature engineering with log transformation
-3. Multiple clustering algorithms with consensus clustering
-4. Statistical validation and visualization
-5. Business interpretation and visual export capabilities
-6. Silhouette analysis for cluster quality evaluation
-"""
+
 
 import pandas as pd
 import numpy as np
@@ -164,7 +154,7 @@ class CustomerSegmentation:
                 return pd.read_csv(self.filepath, encoding=encoding, low_memory=False)
             except (UnicodeDecodeError, Exception):
                 continue
-        # Fallback without encoding specification
+        # fallback without encoding specification
         return pd.read_csv(self.filepath, low_memory=False)
     
     def _load_excel_file(self) -> pd.DataFrame:
@@ -270,7 +260,7 @@ class CustomerSegmentation:
         if removed > 0:
             logger.info(f"✓ Removed {removed:,} duplicate rows")
         
-        # 7. Remove extreme outliers in monetary values
+        # 7. remove extreme outliers in Monetary values
         if 'TotalPrice' in df.columns:
             before = len(df)
             q1 = df['TotalPrice'].quantile(0.01)
@@ -314,7 +304,7 @@ class CustomerSegmentation:
                     self.data_stats['clean_customers'] / self.data_stats['raw_customers'] * 100
                 )
             
-            # Transaction retention metrics (renamed for clarity)
+            # Transaction retention metrics
             if self.data_stats['raw_rows'] > 0:
                 self.data_stats['transaction_retention_rate'] = (
                     self.data_stats['clean_rows'] / self.data_stats['raw_rows'] * 100
@@ -1012,7 +1002,7 @@ class CustomerSegmentation:
         logger.info("✓ Saved: 07_cluster_evaluation_metrics.png")
     
     # ========================================================================
-    # PHASE 6: CLUSTERING ALGORITHMS
+    # PHASE 6:CLUSTERING ALGORITHMS.
     # ========================================================================
     def apply_clustering_algorithms(self, optimal_k: int):
         """
@@ -1025,7 +1015,7 @@ class CustomerSegmentation:
         logger.info(f"PHASE 6: CLUSTERING ALGORITHMS (k={optimal_k})")
         logger.info("="*70)
         
-        # Define algorithms to try
+        # define algorithms to try
         algorithms = {
             'KMeans': KMeans(
                 n_clusters=optimal_k,
@@ -1039,7 +1029,7 @@ class CustomerSegmentation:
             )
         }
         
-        # Try DBSCAN if data is not too large
+        #Try DBSCAN if data is not too large
         if len(self.scaled_data) < 10000:
             algorithms['DBSCAN'] = DBSCAN(eps=0.5, min_samples=5)
         
@@ -1120,10 +1110,10 @@ class CustomerSegmentation:
                 logger.error(f"  ✗ Failed: {str(e)}")
                 continue
         
-        # Apply consensus clustering
+        # apply consensus clustering
         self._apply_consensus_clustering(optimal_k)
         
-        # Add consensus to results
+        # add consensus to results
         if 'Consensus' in self.results:
             consensus_result = self.results['Consensus']
             algorithm_results.append({
@@ -1135,7 +1125,7 @@ class CustomerSegmentation:
                 'Noise Points': '0'
             })
         
-        # Create algorithm comparison table
+        #Create algorithm comparison table
         self._create_algorithm_comparison_table(algorithm_results)
         
         # Determine best algorithm
@@ -1172,11 +1162,11 @@ class CustomerSegmentation:
         )
         consensus_labels = final_clusters.fit_predict(1 - consensus_matrix) + 1
         
-        # Store results
+        #Store results
         self.customer_df['Consensus_Cluster'] = consensus_labels
         self.consensus_labels = consensus_labels
         
-        # Calculate metrics
+        # ccalculate metrics
         silhouette = silhouette_score(self.scaled_data, consensus_labels)
         calinski = calinski_harabasz_score(self.scaled_data, consensus_labels)
         davies = davies_bouldin_score(self.scaled_data, consensus_labels)
@@ -1265,7 +1255,7 @@ class CustomerSegmentation:
         logger.info(f"\n🏆 BEST ALGORITHM: {best_algo}")
     
     # ========================================================================
-    # PHASE 7: STATISTICAL VALIDATION
+    # PHASE 7: STATISTICAL VALIDATION..
     # ========================================================================
     def validate_clusters_statistically(self):
         """
@@ -1282,25 +1272,25 @@ class CustomerSegmentation:
         cluster_col = f'{self.best_algorithm}_Cluster'
         logger.info(f"Validating clusters from {self.best_algorithm}...")
         
-        # Define features for validation
+        # defin e features for validation
         validation_features = [
             'Recency', 'Frequency', 'Monetary', 'Avg_Transaction_Value',
             'Tenure', 'Total_Items', 'Unique_Products'
         ]
         
-        # Filter out noise if present
+        #Filter out noise if present
         validation_df = self.customer_df.copy()
         if -1 in validation_df[cluster_col].values:
             validation_df = validation_df[validation_df[cluster_col] != -1]
         
-        # Perform ANOVA for each feature
+        # Perform ANOVA for features
         anova_results = []
         
         for feature in validation_features:
             if feature not in validation_df.columns:
                 continue
             
-            # Group data by cluster
+            #group data by Cluster
             clusters_data = []
             cluster_labels = sorted(validation_df[cluster_col].unique())
             
@@ -1308,18 +1298,18 @@ class CustomerSegmentation:
                 cluster_data = validation_df[validation_df[cluster_col] == cluster][feature]
                 clusters_data.append(cluster_data)
             
-            # Perform one-way ANOVA
+            #perform one-way ANOVA
             try:
                 f_stat, p_value = stats.f_oneway(*clusters_data)
                 
-                # Calculate effect size (eta-squared)
+                #calculate effect size (eta-squared)
                 grand_mean = validation_df[feature].mean()
                 ss_between = sum(len(data) * (data.mean() - grand_mean) ** 2 for data in clusters_data)
                 ss_total = sum((validation_df[feature] - grand_mean) ** 2)
                 
                 eta_squared = ss_between / ss_total if ss_total > 0 else 0
                 
-                # Interpret effect size
+                #Interpret effect size
                 if eta_squared >= 0.14:
                     effect_size = 'Large'
                 elif eta_squared >= 0.06:
@@ -1342,7 +1332,7 @@ class CustomerSegmentation:
                 logger.warning(f"Could not perform ANOVA for {feature}: {e}")
                 continue
         
-        # Create statistical validation visualization
+        #create statistical validation visualization
         self._create_statistical_validation_visualization(anova_results)
         
         # Log summary
@@ -1367,7 +1357,7 @@ class CustomerSegmentation:
         
         fig, axes = plt.subplots(1, 2, figsize=(16, 8))
         
-        # Plot 1: Statistical significance table
+        #pplot 1: Statistical significance table
         ax_table = axes[0]
         ax_table.axis('tight')
         ax_table.axis('off')
@@ -1415,7 +1405,7 @@ class CustomerSegmentation:
         
         ax_table.set_title('ANOVA Results - Statistical Significance', fontsize=12, fontweight='bold')
         
-        # Plot 2: Effect size visualization
+        #plot 2:Effect size visualization
         ax_bar = axes[1]
         features = [r['Feature'] for r in anova_results]
         eta_squared = [float(r['Eta_squared']) for r in anova_results]
@@ -1429,7 +1419,7 @@ class CustomerSegmentation:
         ax_bar.axvline(0.06, color='orange', linestyle='--', linewidth=2, label='Medium (η²≥0.06)')
         ax_bar.axvline(0.01, color='yellow', linestyle='--', linewidth=2, label='Small (η²≥0.01)')
         
-        # Add values on bars
+        #sdd values on bars
         for bar, value in zip(bars, eta_squared):
             width = bar.get_width()
             ax_bar.text(width + 0.01, bar.get_y() + bar.get_height()/2,
@@ -1448,7 +1438,7 @@ class CustomerSegmentation:
         logger.info("✓ Saved: 09_statistical_validation.png")
     
     # ========================================================================
-    # PHASE 8: VISUALIZATION
+    # PHASE 8:VISUALIZATION
     # ========================================================================
     def visualize_clusters(self):
         """Create comprehensive cluster visualizations."""
@@ -1462,31 +1452,31 @@ class CustomerSegmentation:
         
         cluster_col = f'{self.best_algorithm}_Cluster'
         
-        # 1. PCA Visualization
+        #1. PCA visualization
         logger.info("Creating PCA visualization...")
         self._create_pca_visualization(cluster_col)
         
-        # 2. t-SNE Visualization
+        #2. t-SNE Visualization
         logger.info("Creating t-SNE visualization...")
         self._create_tsne_visualization(cluster_col)
         
-        # 3. Feature Profiles
+        # 3.Feature Profile s
         logger.info("Creating feature profiles...")
         self._create_feature_profiles(cluster_col)
         
-        # 4. Cluster Distribution
+        #4. cluster distribution
         logger.info("Creating cluster distribution plots...")
         self._create_cluster_distribution(cluster_col)
         
-        # 5. 3D RFM Plot
+        #5.3D RFM Plot
         logger.info("Creating 3D RFM plot...")
         self._create_3d_rfm_plot(cluster_col)
         
-        # 6. Cluster Profiles Table
+        # 6.sluster Profiles table
         logger.info("Creating cluster profiles table...")
         self._create_cluster_profiles_table(cluster_col)
         
-        # 🔥 ADDED: 7. Silhouette Analysis (CRITICAL!)
+        # 7. silhouette Analysis 
         logger.info("Creating silhouette analysis...")
         self._create_silhouette_analysis(cluster_col)
         
@@ -1569,7 +1559,7 @@ class CustomerSegmentation:
             'Tenure', 'Total_Items', 'Unique_Products'
         ]
         
-        # Filter out noise
+        # filtr out noise
         profile_df = self.customer_df[self.customer_df[cluster_col] != -1].copy()
         
         # Normalize features for comparison
@@ -1583,7 +1573,7 @@ class CustomerSegmentation:
         
         normalized_profiles['Cluster'] = profile_df[cluster_col].values
         
-        # Calculate cluster means
+        # Calculate Cluster mean s
         cluster_means = normalized_profiles.groupby('Cluster')[key_features].mean()
         
         # Create heatmap
@@ -1622,7 +1612,7 @@ class CustomerSegmentation:
             ax1.text(bar.get_x() + bar.get_width()/2., height + 0.1,
                     f'{int(height):,}', ha='center', va='bottom')
         
-        # Pie chart
+        #pie chart
         ax2.pie(cluster_counts.values, labels=[f'Cluster {int(i)}' for i in cluster_counts.index],
                 autopct='%1.1f%%', startangle=90, colors=colors)
         ax2.set_title('Cluster Proportion', fontsize=14, fontweight='bold')
@@ -1638,16 +1628,16 @@ class CustomerSegmentation:
         fig = plt.figure(figsize=(12, 10))
         ax = fig.add_subplot(111, projection='3d')
         
-        # Sample if large
+        # sample if large
         if len(self.customer_df) > 5000:
             plot_df = self.customer_df.sample(5000, random_state=self.config['random_state'])
         else:
             plot_df = self.customer_df
         
-        # Filter out noise
+        # Filter ou t noise
         plot_df = plot_df[plot_df[cluster_col] != -1]
         
-        # Create scatter plot
+        #Create Scatter plot
         scatter = ax.scatter(
             plot_df['Recency'],
             plot_df['Frequency'],
@@ -1664,7 +1654,7 @@ class CustomerSegmentation:
         ax.set_title(f'3D RFM Plot - {self.best_algorithm}', 
                     fontsize=14, fontweight='bold', pad=20)
         
-        # Add colorbar
+        # add colorbar
         cbar = plt.colorbar(scatter, ax=ax, pad=0.1)
         cbar.set_label('Cluster', fontsize=11)
         
@@ -1678,7 +1668,7 @@ class CustomerSegmentation:
         # Filter out noise
         profile_df = self.customer_df[self.customer_df[cluster_col] != -1].copy()
         
-        # Calculate statistics for each cluster
+        # calculate statistics for each cluster
         cluster_stats = profile_df.groupby(cluster_col).agg({
             'Recency': ['mean', 'std'],
             'Frequency': ['mean', 'std'],
@@ -1689,10 +1679,10 @@ class CustomerSegmentation:
             'CustomerID': 'count'
         })
         
-        # Flatten the multi-level columns
+        # flatten the Multi-level columns
         cluster_stats.columns = ['_'.join(col).strip() for col in cluster_stats.columns.values]
         
-        # Create table data
+        # Create table Data
         table_data = []
         for cluster in sorted(cluster_stats.index):
             stats = cluster_stats.loc[cluster]
@@ -1707,7 +1697,7 @@ class CustomerSegmentation:
                 f"{stats['Unique_Products_mean']:.1f} ± {stats['Unique_Products_std']:.1f}"
             ])
         
-        # Create visualization
+        #create visualization
         fig, ax = plt.subplots(figsize=(16, len(table_data) * 0.8 + 2))
         ax.axis('tight')
         ax.axis('off')
@@ -1725,7 +1715,7 @@ class CustomerSegmentation:
             table[(0, i)].set_facecolor('#2E8B57')
             table[(0, i)].set_text_props(weight='bold', color='white')
         
-        # Style alternating rows
+        #style alternating Rows
         for i in range(1, len(table_data) + 1):
             if i % 2 == 0:
                 for j in range(len(columns)):
@@ -1745,10 +1735,10 @@ class CustomerSegmentation:
         """
         logger.info("Creating silhouette analysis visualization...")
         
-        # Get cluster labels
+        # Get Cluster label s
         cluster_labels = self.customer_df[cluster_col].values
         
-        # Filter out noise if present (DBSCAN)
+        #filter out Noise if Present (DBSCAN)
         if -1 in cluster_labels:
             valid_mask = cluster_labels != -1
             data_for_silhouette = self.scaled_data[valid_mask]
@@ -1757,32 +1747,32 @@ class CustomerSegmentation:
             data_for_silhouette = self.scaled_data
             labels_for_silhouette = cluster_labels
         
-        # Calculate silhouette values for each sample
+        #Calculate silhouette Values for each sample
         silhouette_vals = silhouette_samples(data_for_silhouette, labels_for_silhouette)
         
-        # Get unique clusters
+        #Get unique clusters
         unique_clusters = sorted(np.unique(labels_for_silhouette))
         n_clusters = len(unique_clusters)
         
-        # Calculate overall silhouette score
+        # Calculate overall Silhouette score
         silhouette_avg = silhouette_score(data_for_silhouette, labels_for_silhouette)
         
-        # Create figure
+        # create figure
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))
         
-        # === LEFT PLOT: Silhouette plot ===
+        # ==LEFT PLOT: silhouette plot ===
         y_lower = 10
         colors = plt.cm.Set3(np.linspace(0, 1, n_clusters))
         
         for i, cluster in enumerate(unique_clusters):
-            # Get silhouette values for this cluster
+            # Get Silhouette Values for this Cluster
             cluster_silhouette_vals = silhouette_vals[labels_for_silhouette == cluster]
             cluster_silhouette_vals.sort()
             
             size_cluster = cluster_silhouette_vals.shape[0]
             y_upper = y_lower + size_cluster
             
-            # Fill silhouette plot
+            # fill silhouette Plot
             ax1.fill_betweenx(
                 np.arange(y_lower, y_upper),
                 0,
@@ -1793,17 +1783,17 @@ class CustomerSegmentation:
                 label=f'Cluster {int(cluster)}'
             )
             
-            # Add cluster label
+            #Add cluster label
             ax1.text(-0.05, y_lower + 0.5 * size_cluster, f'{int(cluster)}', 
                     fontsize=10, fontweight='bold')
             
             y_lower = y_upper + 10
         
-        # Add average silhouette line
+        # Add aVerage Silhouette line
         ax1.axvline(x=silhouette_avg, color='red', linestyle='--', linewidth=2,
                    label=f'Average: {silhouette_avg:.3f}')
         
-        # Formatting
+        # formatting
         ax1.set_xlabel('Silhouette Coefficient', fontsize=12, fontweight='bold')
         ax1.set_ylabel('Cluster', fontsize=12, fontweight='bold')
         ax1.set_title(f'Silhouette Plot by Cluster\n{self.best_algorithm}', 
@@ -1814,11 +1804,11 @@ class CustomerSegmentation:
         ax1.grid(True, alpha=0.3, axis='x')
         ax1.legend(loc='lower right')
         
-        # === RIGHT PLOT: Summary table ===
+        # ===RIGHT PLOT: Summary table ==
         ax2.axis('tight')
         ax2.axis('off')
         
-        # Calculate per-cluster statistics
+        # calculate per cluster statistics
         table_data = []
         for cluster in unique_clusters:
             cluster_vals = silhouette_vals[labels_for_silhouette == cluster]
@@ -1830,13 +1820,13 @@ class CustomerSegmentation:
             # Determine quality
             if cluster_avg >= 0.5:
                 quality = "✓ Good"
-                color = '#90EE90'  # Light green
+                color = '#90EE90'  
             elif cluster_avg >= 0.3:
                 quality = "⚠ Fair"
-                color = '#FFFF99'  # Light yellow
+                color = '#FFFF99'  
             else:
                 quality = "✗ Poor"
-                color = '#FFB6C1'  # Light pink
+                color = '#FFB6C1'  
             
             table_data.append([
                 f'Cluster {int(cluster)}',
@@ -1871,19 +1861,19 @@ class CustomerSegmentation:
         table.set_fontsize(10)
         table.scale(1.2, 2)
         
-        # Style header
+        # Style Header
         for i in range(len(columns)):
             table[(0, i)].set_facecolor('#40466e')
             table[(0, i)].set_text_props(weight='bold', color='white')
         
-        # Color code rows by quality
+        # color code rows by quality
         for i, row in enumerate(table_data, 1):
             for j in range(len(columns)):
                 table[(i, j)].set_facecolor(row[6])
         
         ax2.set_title('Cluster Quality Summary', fontsize=14, fontweight='bold')
         
-        # Add interpretation text
+        # add interpretation text
         interpretation = (
             f"Interpretation:\n"
             f"• Average Silhouette: {silhouette_avg:.3f} "
@@ -1905,7 +1895,7 @@ class CustomerSegmentation:
         logger.info("✓ Saved: 15a_silhouette_analysis.png")
     
     # ========================================================================
-    # PHASE 9: BUSINESS INTERPRETATION
+    # PHASE 9: BUSINESS INTERPRETATON
     # ========================================================================
     def interpret_clusters(self) -> Dict:
         """
@@ -1925,7 +1915,7 @@ class CustomerSegmentation:
         cluster_col = f'{self.best_algorithm}_Cluster'
         interpretation_df = self.customer_df[self.customer_df[cluster_col] != -1].copy()
         
-        # Calculate cluster statistics
+        # calculate cluster Statistics
         cluster_stats = interpretation_df.groupby(cluster_col).agg({
             'Recency': 'mean',
             'Frequency': 'mean',
@@ -1942,7 +1932,7 @@ class CustomerSegmentation:
             'Monetary': 'mean'
         })
         
-        # Interpret each cluster
+        #interpret each cluster
         segment_descriptions = {}
         
         for cluster in cluster_stats.index:
@@ -1950,7 +1940,7 @@ class CustomerSegmentation:
             count = stats['Count']
             percentage = (count / len(interpretation_df)) * 100
             
-            # Calculate scores
+            #calculate scores
             recency_score = 1 - min(stats['Recency'] / 365, 1)
             frequency_score = min(stats['Frequency'] / cluster_stats['Frequency'].max(), 1)
             monetary_score = min(stats['Monetary'] / cluster_stats['Monetary'].max(), 1)
@@ -2002,16 +1992,16 @@ class CustomerSegmentation:
                 'avg_monetary': float(stats['Monetary'])
             }
             
-            # Add segment information to dataframe
+            # add segment Information to dataframe
             self.customer_df.loc[
                 self.customer_df[cluster_col] == cluster,
                 f'{self.best_algorithm}_Segment'
             ] = segment_name
         
-        # Create business interpretation visualization
+        # create business interpretation Visualization
         self._create_business_interpretation_visualization(segment_descriptions)
         
-        # Create action plan visualization
+        # create action Plan visualization
         self._create_action_plan_visualization(segment_descriptions)
         
         return segment_descriptions
@@ -2021,7 +2011,7 @@ class CustomerSegmentation:
         if not segment_descriptions:
             return
         
-        # Prepare data for visualization
+        # prepare data f0r visualization
         clusters = []
         segment_names = []
         descriptions = []
@@ -2041,10 +2031,10 @@ class CustomerSegmentation:
             customer_counts.append(f"{info['count']:,}")
             percentages.append(f"{info['percentage']:.1f}%")
         
-        # Create figure with multiple subplots
+        # create figure with multiple subplots
         fig = plt.figure(figsize=(18, 12))
         
-        # 1. Segment summary table
+        # 1.Segment summary Table
         ax1 = plt.subplot2grid((2, 2), (0, 0), colspan=2)
         ax1.axis('tight')
         ax1.axis('off')
@@ -2062,12 +2052,12 @@ class CustomerSegmentation:
         table.set_fontsize(8)
         table.scale(1.1, 1.8)
         
-        # Style header
+        #Style header
         for i in range(len(columns)):
             table[(0, i)].set_facecolor('#40466e')
             table[(0, i)].set_text_props(weight='bold', color='white')
         
-        # Style by priority
+        # Style By priority
         priority_colors = {
             1: '#FFD700',  # Gold for highest priority
             2: '#FFA500',  # Orange
@@ -2084,7 +2074,7 @@ class CustomerSegmentation:
         
         ax1.set_title('Business Segment Interpretation', fontsize=12, fontweight='bold')
         
-        # 2. Value score comparison
+        #2. Value score comparison
         ax2 = plt.subplot2grid((2, 2), (1, 0))
         bars = ax2.barh(clusters, value_scores, color=[priority_colors[p] for p in priorities])
         ax2.set_xlabel('Value Score (0-1)')
@@ -2096,7 +2086,7 @@ class CustomerSegmentation:
             ax2.text(bar.get_width() + 0.01, bar.get_y() + bar.get_height()/2,
                     f'{value:.3f}', va='center')
         
-        # 3. Customer distribution
+        # 3.Customer Distribution
         ax3 = plt.subplot2grid((2, 2), (1, 1))
         sizes = [info['count'] for info in segment_descriptions.values()]
         labels = [info['segment_name'] for info in segment_descriptions.values()]
@@ -2121,7 +2111,7 @@ class CustomerSegmentation:
         if not segment_descriptions:
             return
         
-        # Group segments by priority
+        # Group segments by Priority
         priority_groups = {}
         for cluster, info in segment_descriptions.items():
             priority = info['priority']
@@ -2129,7 +2119,7 @@ class CustomerSegmentation:
                 priority_groups[priority] = []
             priority_groups[priority].append(info)
         
-        # Create action plan table
+        # create Action plan table
         fig, ax = plt.subplots(figsize=(14, len(segment_descriptions) * 0.8 + 3))
         ax.axis('tight')
         ax.axis('off')
@@ -2194,11 +2184,11 @@ class CustomerSegmentation:
             logger.error("No data to export")
             return
         
-        # 1. Create customer segment assignment table (sample)
+        # 1. create customer segment assignment table (sample)
         logger.info("Creating customer segment assignment sample...")
         self._create_customer_segment_sample()
         
-        # 2. Create executive summary visualization
+        # 2. creete executive summary visualization
         logger.info("Creating executive summary...")
         self._create_executive_summary_visualization()
         
@@ -2238,7 +2228,7 @@ class CustomerSegmentation:
         if self.best_algorithm is None:
             return
         
-        # Take a sample of customers
+        # Take sample of customers
         sample_size = min(20, len(self.customer_df))
         sample_df = self.customer_df.sample(sample_size, random_state=self.config['random_state']).copy()
         
@@ -2302,10 +2292,10 @@ class CustomerSegmentation:
         """Create comprehensive executive summary visualization."""
         fig = plt.figure(figsize=(16, 12))
         
-        # Create a grid for the summary
+        # Create grid for the summary
         gs = fig.add_gridspec(3, 2, hspace=0.3, wspace=0.3)
         
-        # 1. Project Overview
+        # 1. project Overview
         ax1 = fig.add_subplot(gs[0, 0])
         ax1.axis('tight')
         ax1.axis('off')
@@ -2341,7 +2331,7 @@ class CustomerSegmentation:
         
         ax1.set_title('Project Overview', fontsize=12, fontweight='bold')
         
-        # 2. Key Findings
+        # 2. Key findings
         ax2 = fig.add_subplot(gs[0, 1])
         ax2.axis('tight')
         ax2.axis('off')
@@ -2433,7 +2423,7 @@ class CustomerSegmentation:
         logger.info("✓ Saved: 19_executive_summary.png")
     
     # ========================================================================
-    # MAIN EXECUTION METHOD
+    # MAIN EXECUTION METHOD.
     # ========================================================================
     def run_analysis(self):
         """Execute the complete customer segmentation pipeline."""
@@ -2446,42 +2436,42 @@ class CustomerSegmentation:
         logger.info(f"⏰ Analysis started at: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
         
         try:
-            # Phase 1: Data Loading & Cleaning
+            # Phase 1: data Loading & Cleaning
             logger.info("\n[PHASE 1] Loading and cleaning data...")
             df = self.load_and_clean_data()
             if df is None:
                 logger.error("✗ Data loading failed. Analysis aborted.")
                 return False
             
-            # Phase 2: Feature Engineering
+            # Phase 2: Feature engineering
             logger.info("\n[PHASE 2] Engineering features...")
             customer_features = self.engineer_features(df)
             
-            # Phase 3: Exploratory Data Analysis
+            # Phase 3: exploratory Data Analysis
             logger.info("\n[PHASE 3] Performing EDA...")
             self.perform_eda(customer_features)
             
-            # Phase 4: Data Preprocessing
+            # Phase 4: Data Pre processing
             logger.info("\n[PHASE 4] Preprocessing data...")
             self.preprocess_data(customer_features)
             
-            # Phase 5: Optimal Cluster Determination
+            # Phase 5: Optiml Cluster determination
             logger.info("\n[PHASE 5] Finding optimal clusters...")
             optimal_k = self.find_optimal_clusters()
             
-            # Phase 6: Clustering Algorithms
+            # Phase 6: clustering algorithms
             logger.info("\n[PHASE 6] Applying clustering algorithms...")
             self.apply_clustering_algorithms(optimal_k)
             
-            # Phase 7: Statistical Validation
+            # Phase 7: Statistical validation
             logger.info("\n[PHASE 7] Validating clusters statistically...")
             self.validate_clusters_statistically()
             
-            # Phase 8: Visualization
+            # Phase 8: visualization
             logger.info("\n[PHASE 8] Creating visualizations...")
             self.visualize_clusters()
             
-            # Phase 9: Business Interpretation
+            # Phase 9: Business interpretation
             logger.info("\n[PHASE 9] Interpreting clusters for business...")
             self.interpret_clusters()
             
@@ -2489,11 +2479,11 @@ class CustomerSegmentation:
             logger.info("\n[PHASE 10] Exporting results...")
             self.export_results()
             
-            # Calculate duration
+            # calculate durationn
             end_time = datetime.now()
             duration = end_time - start_time
             
-            # Final summary
+            #  the final summary
             logger.info("\n" + "="*80)
             logger.info("           ANALYSIS COMPLETE - FINAL SUMMARY")
             logger.info("="*80)
@@ -2530,7 +2520,7 @@ if __name__ == "__main__":
     import sys
     import argparse
     
-    # Parse command line arguments
+    # parse command line arguments
     parser = argparse.ArgumentParser(description='Customer Segmentation Analysis')
     parser.add_argument('--filepath', type=str, required=True,
                        help='Path to dataset file (CSV or Excel)')
@@ -2539,7 +2529,7 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    # Create and run analyzer
+    # create & run analyzer
     analyzer = CustomerSegmentation(args.filepath)
     analyzer.config['max_clusters'] = args.max_clusters
     
