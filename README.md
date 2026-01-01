@@ -267,7 +267,7 @@ Since clustering is **unsupervised** (no train/test split), validation uses:
 #### Option 1: Using pip
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/Eng-AlaaHosny/customer-segmentation-analysis-ML
 cd customer-segmentation
 
 # Create virtual environment
